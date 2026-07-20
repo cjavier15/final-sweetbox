@@ -1,5 +1,6 @@
 //import 'package:sweet_box_flutter/services/database_seeder.dart';
 // lib/services/database_seeder.dart
+// lib/services/database_seeder.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 
@@ -10,99 +11,114 @@ class DatabaseSeeder {
     print('Starting database seed...');
 
     // 1. Seed Raw Materials (Inventory)
+    // UPDATED: Categories have been explicitly assigned
     final Map<String, Map<String, dynamic>> rawMaterials = {
       // --- ORIGINAL RAW MATERIALS ---
       'rm_flour': {
         'name': 'All-Purpose Flour',
         'currentStock': 4.5,
         'unit': 'kg',
-        'costPerUnit': 45.0
+        'costPerUnit': 45.0,
+        'category': 'Raw Ingredients'
       },
       'rm_sugar': {
         'name': 'Sugar',
         'currentStock': 12.0,
         'unit': 'kg',
-        'costPerUnit': 50.0
+        'costPerUnit': 50.0,
+        'category': 'Raw Ingredients'
       },
       'rm_butter': {
         'name': 'Butter',
         'currentStock': 3.2,
         'unit': 'kg',
-        'costPerUnit': 250.0
+        'costPerUnit': 250.0,
+        'category': 'Raw Ingredients'
       },
       'rm_eggs': {
         'name': 'Eggs',
         'currentStock': 48.0,
         'unit': 'pieces',
-        'costPerUnit': 10.0
+        'costPerUnit': 10.0,
+        'category': 'Raw Ingredients'
       },
       'rm_milk': {
         'name': 'Milk',
         'currentStock': 8.0,
         'unit': 'liters',
-        'costPerUnit': 60.0
+        'costPerUnit': 60.0,
+        'category': 'Raw Ingredients'
       },
       'rm_cream_cheese': {
         'name': 'Cream Cheese',
         'currentStock': 2.1,
         'unit': 'kg',
-        'costPerUnit': 400.0
+        'costPerUnit': 400.0,
+        'category': 'Fillings' // Assigned to Fillings
       },
       'rm_cocoa': {
         'name': 'Cocoa Powder',
         'currentStock': 5.5,
         'unit': 'kg',
-        'costPerUnit': 200.0
+        'costPerUnit': 200.0,
+        'category': 'Flavorings' // Assigned to Flavorings
       },
       'rm_heavy_cream': {
         'name': 'Heavy Cream',
         'currentStock': 1.0,
         'unit': 'liters',
-        'costPerUnit': 150.0
+        'costPerUnit': 150.0,
+        'category': 'Raw Ingredients'
       },
-
       // --- NEW RAW MATERIALS ---
       'rm_coffee_beans': {
         'name': 'Coffee Beans',
         'currentStock': 5.0,
         'unit': 'kg',
-        'costPerUnit': 600.0
+        'costPerUnit': 600.0,
+        'category': 'Raw Ingredients'
       },
       'rm_yeast': {
         'name': 'Active Dry Yeast',
         'currentStock': 1.5,
         'unit': 'kg',
-        'costPerUnit': 180.0
+        'costPerUnit': 180.0,
+        'category': 'Raw Ingredients'
       },
       'rm_vanilla': {
         'name': 'Vanilla Extract',
         'currentStock': 0.5,
         'unit': 'liters',
-        'costPerUnit': 850.0
+        'costPerUnit': 850.0,
+        'category': 'Flavorings' // Assigned to Flavorings
       },
       'rm_salt': {
         'name': 'Salt',
         'currentStock': 3.0,
         'unit': 'kg',
-        'costPerUnit': 25.0
+        'costPerUnit': 25.0,
+        'category': 'Raw Ingredients'
       },
       'rm_cinnamon': {
         'name': 'Cinnamon Powder',
         'currentStock': 1.0,
         'unit': 'kg',
-        'costPerUnit': 450.0
+        'costPerUnit': 450.0,
+        'category': 'Flavorings' // Assigned to Flavorings
       },
       'rm_strawberries': {
         'name': 'Fresh Strawberries',
         'currentStock': 2.0,
         'unit': 'kg',
-        'costPerUnit': 350.0
+        'costPerUnit': 350.0,
+        'category': 'Fillings' // Assigned to Fillings
       },
       'rm_matcha': {
         'name': 'Matcha Powder',
         'currentStock': 1.0,
         'unit': 'kg',
-        'costPerUnit': 1200.0
+        'costPerUnit': 1200.0,
+        'category': 'Flavorings' // Assigned to Flavorings
       },
     };
 
@@ -154,7 +170,6 @@ class DatabaseSeeder {
           {'rawMaterialId': 'rm_sugar', 'quantityRequired': 0.05},
         ]
       },
-
       // --- 10 NEW PRODUCTS ---
       {
         'name': 'Butter Croissant',
@@ -271,7 +286,6 @@ class DatabaseSeeder {
     for (var doc in oldProducts.docs) {
       await doc.reference.delete();
     }
-
     for (var product in products) {
       await _db.collection('products').add(product);
     }
@@ -291,7 +305,6 @@ class DatabaseSeeder {
       int daysAgo = random.nextInt(7);
       DateTime txDate =
           now.subtract(Duration(days: daysAgo, hours: random.nextInt(12)));
-
       // Randomize cart size and amounts
       int numItems = random.nextInt(3) + 1;
       double totalAmount = 0;

@@ -9,15 +9,22 @@ class FirestoreService {
     return _db
         .collection('inventory')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => RawMaterial(
-                  id: doc.id,
-                  name: doc.get('name'),
-                  currentStock: (doc.get('currentStock') as num).toDouble(),
-                  unit: doc.get('unit'),
-                  costPerUnit: (doc.get('costPerUnit') as num).toDouble(),
-                ))
-            .toList());
+        .map((snapshot) => snapshot.docs.map((doc) {
+              // Safely extract category, defaulting to 'Raw Ingredients' if missing
+              final data = doc.data();
+              final category = data.containsKey('category')
+                  ? data['category'] as String
+                  : 'Raw Ingredients';
+
+              return RawMaterial(
+                id: doc.id,
+                name: doc.get('name'),
+                currentStock: (doc.get('currentStock') as num).toDouble(),
+                unit: doc.get('unit'),
+                costPerUnit: (doc.get('costPerUnit') as num).toDouble(),
+                category: category, // MAP FROM DATABASE
+              );
+            }).toList());
   }
 
   Future<void> updateInventoryItem(String id, Map<String, dynamic> data) async {
@@ -67,40 +74,32 @@ class FirestoreService {
     bool isRefund = false,
   }) async {
     final Map<String, int> productQuantities = {};
-
     for (var item in cart) {
       productQuantities[item['name']] =
           (productQuantities[item['name']] ?? 0) + (item['quantity'] as int);
     }
-
     return _db.runTransaction((transaction) async {
       final productSnapshots = await _db.collection('products').get();
       final inventorySnapshots = await _db.collection('inventory').get();
-
       final List<Map<String, dynamic>> transactionItemsJson = [];
-
       for (var itemEntry in productQuantities.entries) {
         final prodDoc = productSnapshots.docs
             .firstWhere((d) => d.get('name') == itemEntry.key);
         final recipeData = prodDoc.get('recipe') as List<dynamic>;
-
         transactionItemsJson.add({
           'productId': prodDoc.id,
           'name': itemEntry.key,
           'quantity': itemEntry.value,
           'price': prodDoc.get('price'),
         });
-
         for (var ingredient in recipeData) {
           final rawMaterialId = ingredient['rawMaterialId'];
           final double qtyNeededPerUnit =
               (ingredient['quantityRequired'] as num).toDouble();
-
           // If refund, ADD stock. If sale, DEDUCT stock.
           final double aggregateDeduction = isRefund
               ? -(qtyNeededPerUnit * itemEntry.value)
               : (qtyNeededPerUnit * itemEntry.value);
-
           final invDoc =
               inventorySnapshots.docs.firstWhere((i) => i.id == rawMaterialId);
           final double currentStock =
@@ -120,7 +119,6 @@ class FirestoreService {
           });
         }
       }
-
       final newTxRef = _db.collection('transactions').doc();
       transaction.set(newTxRef, {
         'timestamp': FieldValue.serverTimestamp(),
@@ -168,15 +166,12 @@ class FirestoreService {
         .where('password', isEqualTo: password)
         .limit(1)
         .get();
-
     if (snapshot.docs.isEmpty) {
       return null;
     }
-
     final doc = snapshot.docs.first;
     final data = doc.data();
     final normalizedRole = data['Role'] ?? data['role'];
-
     return {
       'id': doc.id,
       ...data,

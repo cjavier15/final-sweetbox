@@ -6,7 +6,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
-
   @override
   State<InventoryScreen> createState() => _InventoryScreenState();
 }
@@ -17,7 +16,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // Filter State
   String _selectedCategory = 'All';
   String _selectedStatus = 'All';
-
   final List<String> _categories = [
     'All',
     'Raw Ingredients',
@@ -83,14 +81,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
           // Apply Filters
           final filteredMaterials = allMaterials.where((material) {
-            // Note: Replace with actual material.category & material.threshold once added to model
-            final double threshold = 15.0;
-            final String category = 'Raw Ingredients';
+            final double threshold = 15.0; // Global threshold fallback
             final String status =
                 _getItemStatus(material.currentStock, threshold);
 
-            final matchesCategory =
-                _selectedCategory == 'All' || category == _selectedCategory;
+            // UPDATED: Now filtering directly against the database category
+            final matchesCategory = _selectedCategory == 'All' ||
+                material.category == _selectedCategory;
             final matchesStatus =
                 _selectedStatus == 'All' || status == _selectedStatus;
 
@@ -101,7 +98,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth >= 900;
               final isMobile = constraints.maxWidth < 650;
-
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -146,12 +142,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // =========================================================================
   // TOP LEVEL UI: SCORECARDS & FILTERS
   // =========================================================================
-
   Widget _buildScorecards(List<RawMaterial> items, bool isMobile) {
     int inStock = 0;
     int lowStock = 0;
     int critical = 0;
-
     for (var item in items) {
       double threshold = 15.0; // Fallback threshold
       String status = _getItemStatus(item.currentStock, threshold);
@@ -159,7 +153,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
       if (status == 'Low Stock') lowStock++;
       if (status == 'Critical') critical++;
     }
-
     return Wrap(
       spacing: 16,
       runSpacing: 16,
@@ -199,7 +192,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(title,
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600)),
@@ -208,7 +201,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ),
           const SizedBox(height: 12),
           Text(value,
-              style: TextStyle(
+              style: const TextStyle(
                   color: AppColors.primary,
                   fontSize: 24,
                   fontWeight: FontWeight.bold)),
@@ -286,11 +279,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // =========================================================================
   // RESPONSIVE LAYOUTS (Tables & Cards)
   // =========================================================================
-
   Widget _buildDataTable(List<RawMaterial> items) {
-    if (items.isEmpty)
+    if (items.isEmpty) {
       return const Center(child: Text("No items match your filters."));
-
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -316,8 +308,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
             itemBuilder: (context, index) {
               final material = items[index];
               final double threshold = 15.0;
-              final String category = 'Raw Ingredients';
-
               return InkWell(
                 onTap: () => _openEditDialog(material),
                 hoverColor: Colors.black.withOpacity(0.02),
@@ -338,12 +328,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         flex: 2,
                         child: Align(
                             alignment: Alignment.centerLeft,
-                            child: _buildCategoryChip(category)),
+                            child: _buildCategoryChip(material.category)),
                       ),
                       Expanded(
                           flex: 1,
                           child: Text(material.unit,
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 14,
                                   color: AppColors.textSecondary))),
                       Expanded(
@@ -354,7 +344,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       Expanded(
                           flex: 1,
                           child: Text(threshold.toStringAsFixed(0),
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 14,
                                   color: AppColors.textSecondary))),
                     ],
@@ -369,9 +359,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   Widget _buildMobileList(List<RawMaterial> items) {
-    if (items.isEmpty)
+    if (items.isEmpty) {
       return const Center(child: Text("No items match your filters."));
-
+    }
     return ListView.separated(
       padding: const EdgeInsets.only(bottom: 80),
       itemCount: items.length,
@@ -379,8 +369,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
       itemBuilder: (context, index) {
         final material = items[index];
         final double threshold = 15.0;
-        final String category = 'Raw Ingredients';
-
         return Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -404,7 +392,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.primary))),
-                      _buildCategoryChip(category),
+                      _buildCategoryChip(material.category),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -412,10 +400,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Unit: ${material.unit}',
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 12, color: AppColors.textSecondary)),
                       Text('Threshold: ${threshold.toStringAsFixed(0)}',
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   ),
@@ -434,7 +422,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // =========================================================================
   // SHARED UI COMPONENTS
   // =========================================================================
-
   Widget _headerText(String title) {
     return Text(title,
         style: const TextStyle(
@@ -463,10 +450,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
     Color statusColor = AppColors.success;
     if (status == 'Critical') statusColor = AppColors.danger;
     if (status == 'Low Stock') statusColor = AppColors.warning;
-
     double maxVisualStock = threshold * 2.5;
     double fillPercentage = (currentStock / maxVisualStock).clamp(0.0, 1.0);
-
     return Row(
       children: [
         Expanded(
@@ -499,7 +484,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // =========================================================================
   // ACTIONS & DIALOGS
   // =========================================================================
-
   void _showActionMenu() {
     showModalBottomSheet(
         context: context,
@@ -546,12 +530,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
   void _openAddProductBOMDialog() {
     final productNameController = TextEditingController();
     final productPriceController = TextEditingController();
-
-    // List to hold dynamic rows for raw materials needed
     List<Map<String, TextEditingController>> bomItems = [
       {'name': TextEditingController(), 'qty': TextEditingController()}
     ];
-
     showDialog(
         context: context,
         builder: (context) {
@@ -583,15 +564,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                               labelText: 'Selling Price',
                               border: OutlineInputBorder())),
                       const SizedBox(height: 24),
-
                       const Text(
                           'Bill of Materials (Raw Ingredients needed per 1 unit)',
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary)),
                       const SizedBox(height: 8),
-
-                      // Dynamic List of Materials
                       ...bomItems.asMap().entries.map((entry) {
                         int index = entry.key;
                         var item = entry.value;
@@ -629,7 +607,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
                           ),
                         );
                       }),
-
                       const SizedBox(height: 8),
                       TextButton.icon(
                         icon: const Icon(Icons.add),
@@ -654,8 +631,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     if (productNameController.text.isEmpty) return;
-
-                    // Format BOM data for database insertion
                     List<Map<String, dynamic>> formattedBOM = bomItems
                         .where((item) =>
                             item['name']!.text.isNotEmpty &&
@@ -666,8 +641,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                   double.tryParse(item['qty']!.text) ?? 0.0,
                             })
                         .toList();
-
-                    // Example Firestore logic to save product + BOM
                     await FirebaseFirestore.instance
                         .collection('products')
                         .add({
@@ -677,7 +650,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       'bom': formattedBOM,
                       'createdAt': FieldValue.serverTimestamp(),
                     });
-
                     if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -691,56 +663,85 @@ class _InventoryScreenState extends State<InventoryScreen> {
         });
   }
 
+  // UPDATED: Now includes category dropdown selection inside the StatefulBuilder
   void _openEditDialog(RawMaterial material) {
     final qtyController =
         TextEditingController(text: material.currentStock.toString());
     final costController =
         TextEditingController(text: material.costPerUnit.toString());
 
+    // Ensure the current category exists in the dropdown list, otherwise default to Raw Ingredients
+    String selectedCategory = ['Raw Ingredients', 'Flavorings', 'Fillings']
+            .contains(material.category)
+        ? material.category
+        : 'Raw Ingredients';
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Update ${material.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-                controller: qtyController,
-                decoration: const InputDecoration(labelText: 'Current Stock'),
-                keyboardType: TextInputType.number),
-            const SizedBox(height: 8),
-            TextField(
-                controller: costController,
-                decoration: const InputDecoration(labelText: 'Cost Per Unit'),
-                keyboardType: TextInputType.number),
+      builder: (context) =>
+          StatefulBuilder(// Use StatefulBuilder for dropdown updates
+              builder: (context, setDialogState) {
+        return AlertDialog(
+          title: Text('Update ${material.name}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                  controller: qtyController,
+                  decoration: const InputDecoration(labelText: 'Current Stock'),
+                  keyboardType: TextInputType.number),
+              const SizedBox(height: 8),
+              TextField(
+                  controller: costController,
+                  decoration: const InputDecoration(labelText: 'Cost Per Unit'),
+                  keyboardType: TextInputType.number),
+              const SizedBox(height: 8),
+              // NEW: Category Dropdown
+              DropdownButtonFormField<String>(
+                value: selectedCategory,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: const [
+                  DropdownMenuItem(
+                      value: 'Raw Ingredients', child: Text('Raw Ingredients')),
+                  DropdownMenuItem(
+                      value: 'Flavorings', child: Text('Flavorings')),
+                  DropdownMenuItem(value: 'Fillings', child: Text('Fillings')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setDialogState(() => selectedCategory = value);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                await _firestore.updateInventoryItem(material.id, {
+                  'currentStock': double.tryParse(qtyController.text) ??
+                      material.currentStock,
+                  'costPerUnit': double.tryParse(costController.text) ??
+                      material.costPerUnit,
+                  'category': selectedCategory, // Save the new category
+                });
+                if (!context.mounted) return;
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            )
           ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              await _firestore.updateInventoryItem(material.id, {
-                'currentStock': double.tryParse(qtyController.text) ??
-                    material.currentStock,
-                'costPerUnit': double.tryParse(costController.text) ??
-                    material.costPerUnit,
-              });
-              if (!context.mounted) return;
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          )
-        ],
-      ),
+        );
+      }),
     );
   }
 
   void _openRestockDialog() {
     final nameController = TextEditingController();
     final qtyController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
