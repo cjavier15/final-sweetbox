@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/firestore_service.dart';
+import '../services/transaction_service.dart';
 import '../models/models.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Added for QuerySnapshot
 
 class PosScreen extends StatefulWidget {
   const PosScreen({super.key});
@@ -12,6 +14,8 @@ class PosScreen extends StatefulWidget {
 
 class _PosScreenState extends State<PosScreen> {
   final FirestoreService _firestore = FirestoreService();
+  final TransactionService _transactionService = TransactionService();
+
   late Stream<List<Product>> _productsStream;
 
   @override
@@ -74,8 +78,8 @@ class _PosScreenState extends State<PosScreen> {
         builder: (_) => const Center(child: CircularProgressIndicator()),
       );
 
-      await _firestore.processTransaction(
-        cart: _cart,
+      await _transactionService.processCheckout(
+        cartItems: _cart,
         totalAmount: _total,
         paymentMethod: _selectedPayment,
         appliedDiscount: _pwdDiscount,
@@ -106,6 +110,7 @@ class _PosScreenState extends State<PosScreen> {
                 setState(() {
                   _cart.clear();
                   _pwdDiscount = false;
+                  _isRefund = false;
                 });
               },
               child: const Text('Next Order'),
@@ -115,20 +120,87 @@ class _PosScreenState extends State<PosScreen> {
       );
     } catch (e) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Transaction Failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Transaction Failed: $e'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Dynamic breakpoint for mobile vs desktop/tablet
     final isMobile = MediaQuery.of(context).size.width < 900;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('POS Terminal'),
         actions: [
+          // REAL-TIME INVENTORY ALERT BELL
+          IconButton(
+            icon: const Icon(Icons.notifications_active,
+                color: Colors.orangeAccent),
+            tooltip: 'Check Stock Alerts',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Real-Time Stock Levels'),
+                  content: SizedBox(
+                    width: 400,
+                    height: 500,
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('inventory')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return const Text('Something went wrong');
+                        }
+
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+
+                        final inventoryItems = snapshot.data!.docs;
+
+                        return ListView.builder(
+                          itemCount: inventoryItems.length,
+                          itemBuilder: (context, index) {
+                            var item = inventoryItems[index].data()
+                                as Map<String, dynamic>;
+
+                            // Safe fallback in case 'reorder_level' isn't set yet
+                            int reorderLevel = item['reorder_level'] ?? 10;
+                            int currentStock = item['stock'] ?? 0;
+                            bool isLowStock = currentStock <= reorderLevel;
+
+                            return ListTile(
+                              title: Text(item['name'] ?? 'Unknown'),
+                              subtitle: Text('Stock: $currentStock'),
+                              trailing: isLowStock
+                                  ? const Icon(Icons.warning, color: Colors.red)
+                                  : const Icon(Icons.check_circle,
+                                      color: Colors.green),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    )
+                  ],
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             onPressed: () => Navigator.pushNamedAndRemoveUntil(
@@ -147,7 +219,6 @@ class _PosScreenState extends State<PosScreen> {
           )
         ],
       ),
-      // Drawer replaces the side panel on mobile screens
       endDrawer: isMobile
           ? Drawer(
               child: SafeArea(child: _buildCartPanel(double.infinity)),
@@ -160,7 +231,7 @@ class _PosScreenState extends State<PosScreen> {
                 backgroundColor: AppColors.accent,
                 icon: const Icon(Icons.shopping_cart),
                 label: Text(
-                    '${_cart.length} Items |  ${_total.toStringAsFixed(2)}'),
+                    '${_cart.length} Items | ₱${_total.toStringAsFixed(2)}'),
               ),
             )
           : null,
@@ -195,7 +266,6 @@ class _PosScreenState extends State<PosScreen> {
                   ],
                 ),
               ),
-              // Render standard side panel only on larger screens
               if (!isMobile) _buildCartPanel(360),
             ],
           );
@@ -231,11 +301,12 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   Widget _buildProductGrid(List<Product> products, double screenWidth) {
-    // Determine cross-axis count based on actual width
     int crossAxisCount = 2;
-    if (screenWidth > 1200)
+    if (screenWidth > 1200) {
       crossAxisCount = 4;
-    else if (screenWidth > 600) crossAxisCount = 3;
+    } else if (screenWidth > 600) {
+      crossAxisCount = 3;
+    }
 
     return GridView.builder(
       padding: const EdgeInsets.all(12),
@@ -260,7 +331,7 @@ class _PosScreenState extends State<PosScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center),
                   const SizedBox(height: 6),
-                  Text(' ${item.price.toStringAsFixed(2)}',
+                  Text('₱${item.price.toStringAsFixed(2)}',
                       style: const TextStyle(color: AppColors.primary)),
                 ],
               ),
@@ -284,7 +355,7 @@ class _PosScreenState extends State<PosScreen> {
                 final item = _cart[index];
                 return ListTile(
                   title: Text(item['name']),
-                  subtitle: Text('${item['quantity']}x @  ${item['price']}'),
+                  subtitle: Text('${item['quantity']}x @ ₱${item['price']}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.remove_circle_outline,
                         color: AppColors.danger),
@@ -342,7 +413,7 @@ class _PosScreenState extends State<PosScreen> {
                   children: [
                     const Text('Total due:',
                         style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(' ${_total.toStringAsFixed(2)}',
+                    Text('₱${_total.toStringAsFixed(2)}',
                         style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold)),
                   ],
@@ -353,7 +424,7 @@ class _PosScreenState extends State<PosScreen> {
                   child: ElevatedButton(
                     onPressed: _cart.isEmpty ? null : _processTransaction,
                     child: Text(
-                        'Process Checkout ( ${_total.toStringAsFixed(2)})'),
+                        'Process Checkout (₱${_total.toStringAsFixed(2)})'),
                   ),
                 )
               ],

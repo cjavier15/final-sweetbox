@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BranchManagerScreen extends StatefulWidget {
   const BranchManagerScreen({super.key});
@@ -10,6 +11,38 @@ class BranchManagerScreen extends StatefulWidget {
 
 class _BranchManagerScreenState extends State<BranchManagerScreen> {
   int _selectedIndex = 0;
+
+  // Moved initState here inside the State class
+  @override
+  void initState() {
+    super.initState();
+    _listenForLowStock();
+  }
+
+  // Moved _listenForLowStock here inside the State class
+  void _listenForLowStock() {
+    FirebaseFirestore.instance
+        .collection('inventory')
+        .where('stock',
+            isLessThanOrEqualTo: 10) // Or whatever your threshold is
+        .snapshots()
+        .listen((snapshot) {
+      for (var change in snapshot.docChanges) {
+        // Only trigger an alert if the item was just modified to become low stock
+        if (change.type == DocumentChangeType.modified) {
+          var item = change.doc.data() as Map<String, dynamic>;
+
+          // Show a snackbar or trigger a local notification
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠️ Alert: ${item['name']} is running low!'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+    });
+  }
 
   final List<Map<String, dynamic>> _kpis = [
     {

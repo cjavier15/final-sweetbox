@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/firestore_service.dart';
 import '../models/models.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -12,6 +13,36 @@ class InventoryScreen extends StatefulWidget {
 
 class _InventoryScreenState extends State<InventoryScreen> {
   final FirestoreService _firestore = FirestoreService();
+
+  @override
+  void initState() {
+    super.initState();
+    _listenForLowStock();
+  }
+
+  void _listenForLowStock() {
+    FirebaseFirestore.instance
+        .collection('inventory')
+        .where('stock',
+            isLessThanOrEqualTo: 10) // Or whatever your threshold is
+        .snapshots()
+        .listen((snapshot) {
+      for (var change in snapshot.docChanges) {
+        // Only trigger an alert if the item was just modified to become low stock
+        if (change.type == DocumentChangeType.modified) {
+          var item = change.doc.data() as Map<String, dynamic>;
+
+          // Show a snackbar or trigger a local notification
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠️ Alert: ${item['name']} is running low!'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +57,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           )
         ],
       ),
+      // Your existing stream builder handles the real-time UI updates beautifully!
       body: StreamBuilder<List<RawMaterial>>(
         stream: _firestore.streamInventory(),
         builder: (context, snapshot) {
