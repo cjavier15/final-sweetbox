@@ -430,6 +430,19 @@ class _PosScreenState extends State<PosScreen> {
                     ),
                   ],
                 ),
+                // ADDED: PWD Discount Toggle Switch
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('PWD/Senior Discount (20%)',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    Switch(
+                      activeColor: AppColors.accent,
+                      value: _pwdDiscount,
+                      onChanged: (v) => setState(() => _pwdDiscount = v),
+                    ),
+                  ],
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -446,6 +459,20 @@ class _PosScreenState extends State<PosScreen> {
                   ],
                 ),
                 const Divider(height: 24),
+                // ADDED: Display the discount amount if applied
+                if (_pwdDiscount)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Discount:',
+                            style: TextStyle(color: AppColors.success)),
+                        Text('- ₱ ${_discount.toStringAsFixed(2)}',
+                            style: const TextStyle(color: AppColors.success)),
+                      ],
+                    ),
+                  ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
