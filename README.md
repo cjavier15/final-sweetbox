@@ -1,24 +1,10 @@
-# Sweet Box — Analytics & Operations App
-### Flutter mobile app for role-based POS, inventory, and analytics across Sweet Box's branches
+### Centralized Analytics System with Inventory Management and Decision Support for Operations of Sweet Box
 
 Sweet Box is a pastry shop and restaurant chain operating multiple branches. This repository is the **Flutter mobile companion app** that front-line staff, inventory staff, branch managers, business owners, and system administrators use to run day-to-day operations and view sales performance. It talks directly to **Firebase Cloud Firestore** in real time — sales made at the POS terminal instantly deduct raw-material stock, trigger low-stock alerts on the manager dashboard, and roll up into enterprise-wide revenue charts.
 
 ---
 
-## Table of Contents
 
-- [Tech Stack](#tech-stack)
-- [User Roles & Screens](#user-roles--screens)
-- [Feature Walkthrough](#feature-walkthrough)
-- [Data Model](#data-model)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Seeding Demo Data](#seeding-demo-data)
-- [Building for Release](#building-for-release)
-- [Brand Colors](#brand-colors)
-- [Known Limitations & Suggested Next Steps](#known-limitations--suggested-next-steps)
-
----
 
 ## Tech Stack
 
