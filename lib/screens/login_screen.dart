@@ -45,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
         throw Exception('Invalid email or password');
       }
 
-      final role = user['role']?.toString() ?? _selectedRole;
+      final role = (user['Role'] ?? user['role'] ?? _selectedRole).toString();
 
       await Future.delayed(const Duration(milliseconds: 800));
 
