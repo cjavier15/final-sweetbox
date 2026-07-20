@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-//import 'package:sweet_box_flutter/services/database_seeder.dart';
 import '../theme/app_theme.dart';
 import '../services/firestore_service.dart';
 
@@ -14,16 +13,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final FirestoreService _firestore = FirestoreService();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _obscurePassword = true;
   bool _isLoading = false;
-  String _selectedRole = 'Branch Manager';
-
-  final List<String> _roles = [
-    'Branch Manager',
-    'Inventory Staff',
-    'Front Staff',
-    'System Administrator',
-  ];
 
   void _handleLogin() async {
     final email = _emailController.text.trim();
@@ -45,13 +37,19 @@ class _LoginScreenState extends State<LoginScreen> {
         throw Exception('Invalid email or password');
       }
 
-      final role = (user['Role'] ?? user['role'] ?? _selectedRole).toString();
+      // Dynamically extract the role strictly from the Firestore user record
+      final role = (user['Role'] ?? user['role'] ?? 'Unknown').toString();
 
       await Future.delayed(const Duration(milliseconds: 800));
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/otp',
-          arguments: {'role': role});
+
+      // Navigate to OTP and pass the database-verified role and email for the next screens
+      Navigator.pushReplacementNamed(context, '/otp', arguments: {
+        'role': role,
+        'name':
+            email.split('@')[0], // Optional: passes name for avatar initials
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -84,7 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             vertical: isMobile ? 32 : 48, horizontal: 24),
                         child: Column(
                           children: [
-                            // Logo placeholder
                             Container(
                               width: 100,
                               height: 100,
@@ -153,28 +150,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 28),
 
-                            // Role Selector
-                            Text(
-                              'Role',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            DropdownButtonFormField<String>(
-                              initialValue: _selectedRole,
-                              decoration: const InputDecoration(
-                                prefixIcon: Icon(Icons.badge_outlined),
-                              ),
-                              items: _roles
-                                  .map((role) => DropdownMenuItem(
-                                        value: role,
-                                        child: Text(role),
-                                      ))
-                                  .toList(),
-                              onChanged: (value) =>
-                                  setState(() => _selectedRole = value!),
-                            ),
-                            const SizedBox(height: 16),
-
                             // Email
                             Text('Email',
                                 style: Theme.of(context).textTheme.titleMedium),
@@ -238,57 +213,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 24),
-
-                            // Quick Access Demo Buttons
-                            Text(
-                              'Quick Demo Access',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                _demoChip('POS Terminal', '/pos',
-                                    Icons.point_of_sale),
-                                _demoChip('Inventory', '/inventory',
-                                    Icons.inventory_2_outlined),
-                                _demoChip('Branch Mgr', '/branch-manager',
-                                    Icons.dashboard_outlined),
-                                _demoChip('Sys Admin', '/admin',
-                                    Icons.admin_panel_settings),
-                                _demoChip('Enterprise', '/enterprise',
-                                    Icons.business_outlined),
-                                /* ElevatedButton.icon(
-                                  icon: const Icon(Icons.cloud_upload),
-                                  label:
-                                      const Text('Seed Products to Database'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors
-                                        .green, // Makes it stand out as a dev tool
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  onPressed: () async {
-                                    // Show a loading indicator in the console or UI if you want
-                                    print('Starting database seed...');
-
-                                    await DatabaseSeeder.seedAllData();
-
-                                    // Optional: Show a little pop-up at the bottom of the screen when done
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              'Products seeded successfully!'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    }
-                                  },
-                                ),*/
-                              ],
-                            ),
                           ],
                         ),
                       ),
@@ -300,16 +224,6 @@ class _LoginScreenState extends State<LoginScreen> {
           },
         ),
       ),
-    );
-  }
-
-  Widget _demoChip(String label, String route, IconData icon) {
-    return ActionChip(
-      avatar: Icon(icon, size: 16, color: AppColors.primary),
-      label: Text(label, style: const TextStyle(fontSize: 12)),
-      backgroundColor: AppColors.accent.withValues(alpha: 0.15),
-      side: BorderSide(color: AppColors.accent.withValues(alpha: 0.4)),
-      onPressed: () => Navigator.pushNamed(context, route),
     );
   }
 
