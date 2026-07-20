@@ -138,12 +138,31 @@ class FirestoreService {
         snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
   }
 
-  Future<void> addUser(String email, String role) async {
+  Future<void> addUser(String email, String password, String role) async {
     await _db.collection('users').add({
       'email': email,
+      'password': password,
       'role': role,
-      'createdAt': FieldValue.serverTimestamp()
+      'createdAt': FieldValue.serverTimestamp(),
+      'active': true,
     });
+  }
+
+  Future<Map<String, dynamic>?> authenticateUser(
+      String email, String password) async {
+    final snapshot = await _db
+        .collection('users')
+        .where('email', isEqualTo: email.trim())
+        .where('password', isEqualTo: password)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    final doc = snapshot.docs.first;
+    return {'id': doc.id, ...doc.data()};
   }
 
   Future<void> deleteUser(String id) async {
