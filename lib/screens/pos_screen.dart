@@ -129,6 +129,11 @@ class _PosScreenState extends State<PosScreen> {
       appBar: AppBar(
         title: const Text('POS Terminal'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.exit_to_app),
+            onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                context, '/login', (route) => false),
+          ),
           Center(
             child: Container(
               margin: const EdgeInsets.only(right: 12),

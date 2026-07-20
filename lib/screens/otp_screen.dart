@@ -36,13 +36,17 @@ class _OtpScreenState extends State<OtpScreen> {
   String get _timerText {
     final minutes = _secondsRemaining ~/ 60;
     final seconds = _secondsRemaining % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(1, '0')}';
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   void _handleVerify() async {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final role = args?['role'] ?? 'Branch Manager';
+    final String rawRole = args?['role'] ?? 'Branch Manager';
+
+    // Normalize the string by making it lowercase and removing extra spaces
+    // This prevents simple typos in the database from breaking the routing
+    final String role = rawRole.trim().toLowerCase();
 
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 1));
@@ -50,24 +54,31 @@ class _OtpScreenState extends State<OtpScreen> {
 
     if (!mounted) return;
 
-    switch (role) {
-      case 'Business Owner':
-        Navigator.pushReplacementNamed(context, '/enterprise');
-        break;
-      case 'System Administrator':
-        Navigator.pushReplacementNamed(context, '/admin');
-        break;
-      case 'Branch Manager':
-        Navigator.pushReplacementNamed(context, '/branch-manager');
-        break;
-      case 'Inventory Staff':
-        Navigator.pushReplacementNamed(context, '/inventory');
-        break;
-      case 'Front Staff':
-        Navigator.pushReplacementNamed(context, '/pos');
-        break;
-      default:
-        Navigator.pushReplacementNamed(context, '/branch-manager');
+    // Route dynamically based on the normalized role string
+    if (role == 'business owner' || role == 'owner') {
+      Navigator.pushReplacementNamed(context, '/enterprise', arguments: args);
+    } else if (role == 'system administrator' ||
+        role == 'admin' ||
+        role == 'system admin') {
+      Navigator.pushReplacementNamed(context, '/admin', arguments: args);
+    } else if (role == 'inventory staff' || role == 'inventory') {
+      Navigator.pushReplacementNamed(context, '/inventory', arguments: args);
+    } else if (role == 'front staff' || role == 'cashier' || role == 'pos') {
+      Navigator.pushReplacementNamed(context, '/pos', arguments: args);
+    } else if (role == 'branch manager' || role == 'manager') {
+      Navigator.pushReplacementNamed(context, '/branch-manager',
+          arguments: args);
+    } else {
+      // Fallback if the role in the database is completely unrecognized
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Unrecognized role: $rawRole. Defaulting to Branch Manager.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      Navigator.pushReplacementNamed(context, '/branch-manager',
+          arguments: args);
     }
   }
 
@@ -115,8 +126,6 @@ class _OtpScreenState extends State<OtpScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-
-              // OTP Input Fields
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -127,8 +136,6 @@ class _OtpScreenState extends State<OtpScreen> {
                         )),
               ),
               const SizedBox(height: 12),
-
-              // Timer
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -163,8 +170,6 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Verify Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -172,15 +177,13 @@ class _OtpScreenState extends State<OtpScreen> {
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
-                          width: 5,
+                          width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Text('Verify & Sign In'),
                 ),
               ),
               const SizedBox(height: 12),
-
-              // Resend
               TextButton(
                 onPressed: _secondsRemaining == 0
                     ? () {

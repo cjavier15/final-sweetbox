@@ -1,3 +1,4 @@
+//import 'package:sweet_box_flutter/services/database_seeder.dart';
 // lib/services/database_seeder.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
@@ -319,3 +320,32 @@ class DatabaseSeeder {
     print('Database fully seeded successfully!');
   }
 }
+
+/* ElevatedButton.icon(
+                                  icon: const Icon(Icons.cloud_upload),
+                                  label:
+                                      const Text('Seed Products to Database'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors
+                                        .green, // Makes it stand out as a dev tool
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: () async {
+                                    // Show a loading indicator in the console or UI if you want
+                                    print('Starting database seed...');
+
+                                    await DatabaseSeeder.seedAllData();
+
+                                    // Optional: Show a little pop-up at the bottom of the screen when done
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'Products seeded successfully!'),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),*/

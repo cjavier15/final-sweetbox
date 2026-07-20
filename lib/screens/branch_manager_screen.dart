@@ -12,24 +12,65 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
   int _selectedIndex = 0;
 
   final List<Map<String, dynamic>> _kpis = [
-    {'label': 'Daily Revenue', 'value': '₱24,850', 'change': '+12.4%', 'up': true, 'icon': Icons.attach_money, 'color': AppColors.success},
-    {'label': 'Inventory Status', 'value': '78%', 'change': '-3.2%', 'up': false, 'icon': Icons.inventory_2_outlined, 'color': AppColors.warning},
-    {'label': 'Pending Actions', 'value': '5', 'change': '+2', 'up': false, 'icon': Icons.pending_actions_outlined, 'color': AppColors.danger},
-    {'label': 'Turnover Ratio', 'value': '4.2x', 'change': '+0.3x', 'up': true, 'icon': Icons.loop, 'color': AppColors.info},
-  ];
-
-  final List<Map<String, dynamic>> _productionTargets = [
-    {'product': 'Chocolate Cake', 'recommended': 18, 'justification': 'High demand + Lipa Fiesta in 3 days', 'status': 'pending'},
-    {'product': 'Red Velvet Cake', 'recommended': 12, 'justification': 'Steady demand, current stock sufficient', 'status': 'approved'},
-    {'product': 'Cheese Roll', 'recommended': 60, 'justification': 'Best-selling item, maintain buffer', 'status': 'pending'},
-    {'product': 'Ensaymada', 'recommended': 8, 'justification': 'Slow-moving, reduce production', 'status': 'overridden'},
+    {
+      'label': 'Daily Revenue',
+      'value': '₱ 24,850',
+      'change': '+12.4%',
+      'up': true,
+      'icon': Icons.attach_money,
+      'color': AppColors.success
+    },
+    {
+      'label': 'Inventory Status',
+      'value': '78%',
+      'change': '-3.2%',
+      'up': false,
+      'icon': Icons.inventory_2_outlined,
+      'color': AppColors.warning
+    },
+    {
+      'label': 'Pending Actions',
+      'value': '5',
+      'change': '+2',
+      'up': false,
+      'icon': Icons.pending_actions_outlined,
+      'color': AppColors.danger
+    },
+    {
+      'label': 'Turnover Ratio',
+      'value': '4.2x',
+      'change': '+0.3x',
+      'up': true,
+      'icon': Icons.loop,
+      'color': AppColors.info
+    },
   ];
 
   final List<Map<String, dynamic>> _lowStockAlerts = [
-    {'ingredient': 'All-Purpose Flour', 'available': '4.5 kg', 'threshold': '8.0 kg', 'severity': 'critical'},
-    {'ingredient': 'Heavy Cream', 'available': '1.0 L', 'threshold': '3.0 L', 'severity': 'critical'},
-    {'ingredient': 'Butter', 'available': '3.2 kg', 'threshold': '5.0 kg', 'severity': 'low'},
-    {'ingredient': 'Milk', 'available': '8.0 L', 'threshold': '10.0 L', 'severity': 'low'},
+    {
+      'ingredient': 'All-Purpose Flour',
+      'available': '4.5 kg',
+      'threshold': '8.0 kg',
+      'severity': 'critical'
+    },
+    {
+      'ingredient': 'Heavy Cream',
+      'available': '1.0 L',
+      'threshold': '3.0 L',
+      'severity': 'critical'
+    },
+    {
+      'ingredient': 'Butter',
+      'available': '3.2 kg',
+      'threshold': '5.0 kg',
+      'severity': 'low'
+    },
+    {
+      'ingredient': 'Milk',
+      'available': '8.0 L',
+      'threshold': '10.0 L',
+      'severity': 'low'
+    },
   ];
 
   final List<Map<String, dynamic>> _salesData = [
@@ -42,112 +83,162 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
     {'day': 'Sun', 'value': 29500},
   ];
 
-  final List<String> _navItems = ['Dashboard', 'Sales', 'Inventory', 'Prescriptions'];
+  final List<String> _navItems = ['Dashboard', 'Sales', 'Inventory'];
+
   final List<IconData> _navIcons = [
     Icons.dashboard_outlined,
-    Icons.bar_chart_outlined,
+    Icons.point_of_sale_outlined,
     Icons.inventory_2_outlined,
-    Icons.auto_awesome_outlined,
   ];
+
+  void _handleNavigation(int index) {
+    setState(() => _selectedIndex = index);
+    if (index == 1) {
+      Navigator.pushNamed(context, '/enterprise');
+      setState(() => _selectedIndex = 0);
+    } else if (index == 2) {
+      Navigator.pushNamed(context, '/inventory');
+      setState(() => _selectedIndex = 0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    // Parse the live data attributes coming down from the user collection schema match
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final role = args?['role'] ?? 'Branch Manager';
+    final branchName = args?['branch'] ?? 'Ibaan';
+    final userName = args?['name'] ?? 'Manager';
+
+    // Extract dynamic initials from the 'name' field string
+    String getInitials(String name) {
+      List<String> names = name.split(" ");
+      String initials = "";
+      if (names.isNotEmpty && names[0].isNotEmpty) {
+        initials += names[0][0];
+      }
+      if (names.length > 1 && names[1].isNotEmpty) {
+        initials += names[1][0];
+      }
+      return initials.isEmpty ? "BM" : initials.toUpperCase();
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Branch Manager'),
+            Text(role),
             Text(
-              'Sampaguita Lipa Branch',
+              '$branchName Branch',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.accent,
-                fontSize: 11,
-              ),
+                    color: AppColors.accent,
+                    fontSize: 11,
+                  ),
             ),
           ],
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              Navigator.pushReplacementNamed(context, '/login');
+        leading: Builder(
+          builder: (context) {
+            if (MediaQuery.of(context).size.width < 900) {
+              return IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              );
             }
+            return IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.pushReplacementNamed(context, '/login');
+                }
+              },
+            );
           },
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
+          IconButton(
+              icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: CircleAvatar(
               backgroundColor: AppColors.accent,
               radius: 16,
               child: Text(
-                role == 'Business Owner' ? 'BO' : 'BM',
-                style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w700),
+                getInitials(userName),
+                style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700),
               ),
             ),
           ),
+          IconButton(
+            icon: const Icon(Icons.exit_to_app),
+            onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                context, '/login', (route) => false),
+          )
         ],
       ),
-      body: Stack(
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 900;
-              return Row(
-                children: [
-                  if (!isMobile)
-                    Container(
-                  width: 70,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 900;
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isMobile)
+                Container(
+                  width: 80,
                   color: AppColors.primary,
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
                         const SizedBox(height: 16),
-                        ...List.generate(_navItems.length, (index) => GestureDetector(
-                          onTap: () {
-                            if (index == 3) {
-                              Navigator.pushNamed(context, '/prescriptions', arguments: {'role': role});
-                            } else {
-                              setState(() => _selectedIndex = index);
-                            }
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: _selectedIndex == index
-                                  ? AppColors.accent.withValues(alpha: 0.2)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: _selectedIndex == index ? AppColors.accent : Colors.transparent,
+                        ...List.generate(
+                          _navItems.length,
+                          (index) => GestureDetector(
+                            onTap: () => _handleNavigation(index),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(
+                                  vertical: 4, horizontal: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _selectedIndex == index
+                                    ? AppColors.accent.withValues(alpha: 0.2)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: _selectedIndex == index
+                                      ? AppColors.accent
+                                      : Colors.transparent,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(_navIcons[index],
+                                      color: _selectedIndex == index
+                                          ? AppColors.accent
+                                          : Colors.white54,
+                                      size: 24),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _navItems[index],
+                                    style: TextStyle(
+                                      color: _selectedIndex == index
+                                          ? AppColors.accent
+                                          : Colors.white54,
+                                      fontSize: 10,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Column(
-                              children: [
-                                Icon(_navIcons[index],
-                                    color: _selectedIndex == index ? AppColors.accent : Colors.white54,
-                                    size: 22),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _navItems[index],
-                                  style: TextStyle(
-                                    color: _selectedIndex == index ? AppColors.accent : Colors.white54,
-                                    fontSize: 8,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
                           ),
-                        )),
+                        ),
                       ],
                     ),
                   ),
@@ -161,16 +252,21 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Thursday, May 11, 2025', style: Theme.of(context).textTheme.bodyMedium),
+                          Text('Tuesday, July 21, 2026',
+                              style: Theme.of(context).textTheme.bodyMedium),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: AppColors.accent.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
                               'Live',
-                              style: TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                  color: AppColors.accent,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600),
                             ),
                           ),
                         ],
@@ -193,13 +289,20 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
                               padding: const EdgeInsets.all(14),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(kpi['label'], style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                                      Icon(kpi['icon'] as IconData, size: 18, color: kpi['color'] as Color),
+                                      Text(kpi['label'],
+                                          style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textSecondary)),
+                                      Icon(kpi['icon'] as IconData,
+                                          size: 18,
+                                          color: kpi['color'] as Color),
                                     ],
                                   ),
                                   Text(
@@ -213,9 +316,13 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
                                   Row(
                                     children: [
                                       Icon(
-                                        kpi['up'] ? Icons.trending_up : Icons.trending_down,
+                                        kpi['up']
+                                            ? Icons.trending_up
+                                            : Icons.trending_down,
                                         size: 14,
-                                        color: kpi['up'] ? AppColors.success : AppColors.danger,
+                                        color: kpi['up']
+                                            ? AppColors.success
+                                            : AppColors.danger,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
@@ -223,10 +330,15 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
-                                          color: kpi['up'] ? AppColors.success : AppColors.danger,
+                                          color: kpi['up']
+                                              ? AppColors.success
+                                              : AppColors.danger,
                                         ),
                                       ),
-                                      const Text(' vs yesterday', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                                      Text(' vs yesterday',
+                                          style: TextStyle(
+                                              fontSize: 10,
+                                              color: AppColors.textSecondary)),
                                     ],
                                   ),
                                 ],
@@ -242,18 +354,26 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('7-Day Sales Trend', style: Theme.of(context).textTheme.titleMedium),
+                              Text('7-Day Sales Trend',
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium),
                               const SizedBox(height: 4),
-                              const Text('Daily revenue — Sampaguita Lipa Branch', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                              Text('Daily revenue | $branchName Branch',
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary)),
                               const SizedBox(height: 16),
                               SizedBox(
                                 height: 120,
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
                                   children: _salesData.map((data) {
                                     const maxValue = 32000;
-                                    final height = (data['value'] / maxValue * 100).toDouble();
+                                    final height =
+                                        (data['value'] / maxValue * 100)
+                                            .toDouble();
                                     final isToday = data['day'] == 'Thu';
                                     return Column(
                                       mainAxisAlignment: MainAxisAlignment.end,
@@ -262,8 +382,12 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
                                           '₱${(data['value'] / 1000).toStringAsFixed(0)}K',
                                           style: TextStyle(
                                             fontSize: 9,
-                                            color: isToday ? AppColors.accent : AppColors.textSecondary,
-                                            fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                                            color: isToday
+                                                ? AppColors.accent
+                                                : AppColors.textSecondary,
+                                            fontWeight: isToday
+                                                ? FontWeight.w700
+                                                : FontWeight.w400,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
@@ -271,8 +395,13 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
                                           width: 28,
                                           height: height,
                                           decoration: BoxDecoration(
-                                            color: isToday ? AppColors.accent : AppColors.primary.withValues(alpha: 0.3),
-                                            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                            color: isToday
+                                                ? AppColors.accent
+                                                : AppColors.primary
+                                                    .withValues(alpha: 0.3),
+                                            borderRadius:
+                                                const BorderRadius.vertical(
+                                                    top: Radius.circular(4)),
                                           ),
                                         ),
                                         const SizedBox(height: 4),
@@ -280,8 +409,12 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
                                           data['day'],
                                           style: TextStyle(
                                             fontSize: 10,
-                                            color: isToday ? AppColors.primary : AppColors.textSecondary,
-                                            fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                                            color: isToday
+                                                ? AppColors.primary
+                                                : AppColors.textSecondary,
+                                            fontWeight: isToday
+                                                ? FontWeight.w700
+                                                : FontWeight.w400,
                                           ),
                                         ),
                                       ],
@@ -294,142 +427,54 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('AI Production Targets', style: Theme.of(context).textTheme.titleMedium),
-                          TextButton(
-                            onPressed: () => Navigator.pushNamed(context, '/prescriptions'),
-                            child: const Text('View All', style: TextStyle(color: AppColors.accent)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ..._productionTargets.map((target) => _buildProductionCard(target)),
-                      const SizedBox(height: 16),
-                      Text('Low Stock Alerts', style: Theme.of(context).textTheme.titleMedium),
+                      Text('Low Stock Alerts',
+                          style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       ..._lowStockAlerts.map((alert) => _buildAlertCard(alert)),
                     ],
                   ),
                 ),
               ),
-                ],
-              );
-            },
-          ),
-        ],
+            ],
+          );
+        },
       ),
       drawer: MediaQuery.of(context).size.width < 900
-          ? Drawer(child: SafeArea(child: _buildMobileNav(role)))
+          ? Drawer(child: SafeArea(child: _buildMobileNav()))
           : null,
     );
   }
 
-  Widget _buildMobileNav(String role) {
+  Widget _buildMobileNav() {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text('Navigation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          child: Text('Navigation',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         ),
         const SizedBox(height: 8),
         ...List.generate(_navItems.length, (index) {
           final item = _navItems[index];
           return ListTile(
-            leading: Icon(_navIcons[index]),
-            title: Text(item),
+            leading: Icon(_navIcons[index],
+                color: _selectedIndex == index
+                    ? AppColors.accent
+                    : AppColors.primary),
+            title: Text(item,
+                style: TextStyle(
+                    fontWeight: _selectedIndex == index
+                        ? FontWeight.bold
+                        : FontWeight.normal)),
+            selected: _selectedIndex == index,
             onTap: () {
-              if (index == 3) {
-                Navigator.pushNamed(context, '/prescriptions', arguments: {'role': role});
-              } else {
-                setState(() => _selectedIndex = index);
-                Navigator.pop(context);
-              }
+              Navigator.pop(context);
+              _handleNavigation(index);
             },
           );
         }),
       ],
-    );
-  }
-
-  Widget _buildProductionCard(Map<String, dynamic> target) {
-    final status = target['status'] as String;
-    Color statusColor = status == 'approved'
-        ? AppColors.success
-        : status == 'pending' ? AppColors.warning : AppColors.info;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(target['product'],
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    status.toUpperCase(),
-                    style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.auto_awesome, size: 14, color: AppColors.accent),
-                const SizedBox(width: 4),
-                Text('Recommended: ${target['recommended']} units',
-                    style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary, fontSize: 13)),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(target['justification'],
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-            if (status == 'pending') ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => setState(() => target['status'] = 'overridden'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.danger,
-                        side: const BorderSide(color: AppColors.danger),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      child: const Text('Override', style: TextStyle(fontSize: 12)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => setState(() => target['status'] = 'approved'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      child: const Text('Approve', style: TextStyle(fontSize: 12, color: Colors.white)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 
@@ -450,12 +495,9 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
         ),
         title: Text(alert['ingredient'],
             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-        subtitle: Text('${alert['available']} available / ${alert['threshold']} min',
+        subtitle: Text(
+            '${alert['available']} available / ${alert['threshold']} min',
             style: const TextStyle(fontSize: 11)),
-        trailing: TextButton(
-          onPressed: () => Navigator.pushNamed(context, '/prescriptions'),
-          child: const Text('View Rx', style: TextStyle(color: AppColors.accent, fontSize: 12)),
-        ),
       ),
     );
   }
