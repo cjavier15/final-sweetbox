@@ -135,6 +135,11 @@ class _PosScreenState extends State<PosScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pushNamedAndRemoveUntil(
+              context, '/login', (route) => false),
+        ),
         title: const Text('POS Terminal'),
         actions: [
           // REAL-TIME INVENTORY ALERT BELL
@@ -391,6 +396,7 @@ class _PosScreenState extends State<PosScreen> {
                     const Text('Process as Refund',
                         style: TextStyle(color: AppColors.danger)),
                     Switch(
+                      activeTrackColor: AppColors.danger.withValues(alpha: 0.5),
                       activeColor: AppColors.danger,
                       value: _isRefund,
                       onChanged: (v) => setState(() => _isRefund = v),
