@@ -1,8 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/firestore_service.dart';
 import '../models/models.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -62,14 +62,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacementNamed(context, '/login');
+            }
+          },
+        ),
         title: const Text('Inventory & Supply Chain'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                context, '/login', (route) => false),
-          )
-        ],
       ),
       body: StreamBuilder<List<RawMaterial>>(
         stream: _firestore.streamInventory(),

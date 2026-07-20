@@ -16,10 +16,6 @@ This Flutter app provides a mobile interface for the Sweet Box centralized analy
 | POS Terminal | Front Staff | Product catalogue, cart, split payment processing |
 | Inventory Dashboard | Inventory Staff | Stock levels, restock requests, threshold alerts |
 | Branch Manager Dashboard | Branch Manager | KPIs, sales chart, AI production targets, approve/override |
-| Prescriptions | Branch Manager / Business Owner | Full prescriptive outputs with approve and override controls |
-| AI Chatbot | Branch Manager / Business Owner | Gemini-powered natural language assistant |
-| Enterprise Dashboard | Business Owner | Cross-branch KPIs, Recommended Actions panel, branch ranking |
-
 ---
 
 ## Prerequisites
