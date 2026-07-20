@@ -100,6 +100,49 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
+  void _confirmDelete(String userId, String userEmail) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.danger),
+            SizedBox(width: 12),
+            Text('Confirm Deletion'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete the account for $userEmail? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              // Perform the deletion
+              await _firestore.deleteUser(userId);
+
+              if (!context.mounted) return;
+              Navigator.pop(context); // Close the dialog
+
+              // Optional: Show a quick success snackbar
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Account deleted successfully.')),
+              );
+            },
+            child: const Text('Delete Account'),
+          )
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,7 +177,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline,
                         color: AppColors.danger),
-                    onPressed: () => _firestore.deleteUser(user['id']),
+                    onPressed: () => _confirmDelete(
+                        user['id'], user['email'] ?? 'Unknown User'),
                   ),
                 ),
               );
