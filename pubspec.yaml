@@ -23,8 +23,21 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.6
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+
+flutter_native_splash:
+  color: "#C19A6B" # Your background color (Hex code)
+  image: "assets/logo.png" # Path to your logo
+  android: true
+  ios: true
