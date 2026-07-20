@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 //import 'package:intl/intl.dart';
@@ -153,6 +154,7 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
           LineChartData(
             gridData: const FlGridData(show: true, drawVerticalLine: false),
             titlesData: const FlTitlesData(
+              show: true,
               rightTitles:
                   AxisTitles(sideTitles: SideTitles(showTitles: false)),
               topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -184,12 +186,13 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
     int cash = 0, gcash = 0, card = 0;
     for (var tx in dataPoints) {
       String pm = (tx['paymentMethod'] ?? 'Cash').toString().toLowerCase();
-      if (pm.contains('gcash') || pm.contains('e-wallet'))
+      if (pm.contains('gcash') || pm.contains('e-wallet')) {
         gcash++;
-      else if (pm.contains('card'))
+      } else if (pm.contains('card')) {
         card++;
-      else
+      } else {
         cash++;
+      }
     }
 
     return Card(
@@ -249,9 +252,25 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
   }
 
   // NEW: Bar Chart for Order Volume
+// UPDATED: Connected to live Firebase data by mapping timestamps to weekdays
   Widget _buildTransactionVolumeBarChart(
       List<Map<String, dynamic>> dataPoints) {
     if (dataPoints.isEmpty) return const _EmptyChartState();
+
+    // Group transaction volumes by day of the week (Monday = 0 ... Sunday = 6)
+    List<int> volumePerDay = List.filled(7, 0);
+    int maxVolume = 1; // Default to 1 to avoid division by zero if empty
+
+    for (var tx in dataPoints) {
+      if (tx['timestamp'] != null) {
+        DateTime txDate = (tx['timestamp'] as Timestamp).toDate();
+        int index = txDate.weekday - 1;
+        volumePerDay[index]++;
+        if (volumePerDay[index] > maxVolume) {
+          maxVolume = volumePerDay[index];
+        }
+      }
+    }
 
     return Card(
       child: Padding(
@@ -259,7 +278,7 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Recent Volume Profile',
+            Text('Recent Volume Profile (By Day)',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 24),
             SizedBox(
@@ -267,9 +286,36 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
               child: BarChart(
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
-                  maxY: 15, // Arbitrary max for visualization
-                  barTouchData: BarTouchData(enabled: false),
-                  titlesData: const FlTitlesData(show: false),
+                  maxY: (maxVolume + 5).toDouble(), // Dynamically scale Y-axis
+                  barTouchData: BarTouchData(enabled: true),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          const days = [
+                            'Mon',
+                            'Tue',
+                            'Wed',
+                            'Thu',
+                            'Fri',
+                            'Sat',
+                            'Sun'
+                          ];
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(days[value.toInt()],
+                                style: const TextStyle(fontSize: 10)),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
                   borderData: FlBorderData(show: false),
                   gridData: const FlGridData(show: false),
                   barGroups: List.generate(
@@ -278,10 +324,8 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
                       x: index,
                       barRods: [
                         BarChartRodData(
-                          toY: (dataPoints.length > index
-                                  ? (index * 1.5 + 2)
-                                  : 0)
-                              .toDouble(), // Mock historical distribution
+                          toY: volumePerDay[index]
+                              .toDouble(), // Actual volume from Firestore
                           color: AppColors.primary.withOpacity(0.8),
                           width: 16,
                           borderRadius: const BorderRadius.vertical(

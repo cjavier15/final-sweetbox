@@ -22,7 +22,6 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
   }
 
   void _listenForLowStock() {
-    // This keeps your live popup snackbar functional
     FirebaseFirestore.instance
         .collection('inventory')
         .where('currentStock', isLessThanOrEqualTo: 15.0)
@@ -42,52 +41,6 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
     });
   }
 
-  // KPIs and Sales Data (Still mocked for now, but UI is responsive)
-  final List<Map<String, dynamic>> _kpis = [
-    {
-      'label': 'Daily Revenue',
-      'value': '₱ 24,850',
-      'change': '+12.4%',
-      'up': true,
-      'icon': Icons.attach_money,
-      'color': AppColors.success
-    },
-    {
-      'label': 'Inventory Status',
-      'value': '78%',
-      'change': '-3.2%',
-      'up': false,
-      'icon': Icons.inventory_2_outlined,
-      'color': AppColors.warning
-    },
-    {
-      'label': 'Pending Actions',
-      'value': '5',
-      'change': '+2',
-      'up': false,
-      'icon': Icons.pending_actions_outlined,
-      'color': AppColors.danger
-    },
-    {
-      'label': 'Turnover Ratio',
-      'value': '4.2x',
-      'change': '+0.3x',
-      'up': true,
-      'icon': Icons.loop,
-      'color': AppColors.info
-    },
-  ];
-
-  final List<Map<String, dynamic>> _salesData = [
-    {'day': 'Mon', 'value': 18500},
-    {'day': 'Tue', 'value': 22300},
-    {'day': 'Wed', 'value': 19800},
-    {'day': 'Thu', 'value': 24850},
-    {'day': 'Fri', 'value': 28000},
-    {'day': 'Sat', 'value': 32000},
-    {'day': 'Sun', 'value': 29500},
-  ];
-
   final List<String> _navItems = ['Dashboard', 'Sales', 'Inventory'];
   final List<IconData> _navIcons = [
     Icons.dashboard_outlined,
@@ -104,6 +57,117 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
       Navigator.pushNamed(context, '/inventory');
       setState(() => _selectedIndex = 0);
     }
+  }
+
+  // Helper function to dynamically generate KPIs based on real-time data
+  List<Map<String, dynamic>> _generateKPIs(
+      List<Map<String, dynamic>> transactions) {
+    final now = DateTime.now();
+    double dailyRevenue = 0;
+    int ordersToday = 0;
+
+    // Map to track which products are selling the most today
+    Map<String, int> productSales = {};
+
+    for (var tx in transactions) {
+      if (tx['timestamp'] != null) {
+        DateTime txDate = (tx['timestamp'] as Timestamp).toDate();
+        if (txDate.year == now.year &&
+            txDate.month == now.month &&
+            txDate.day == now.day) {
+          dailyRevenue += (tx['totalAmount'] as num).toDouble();
+          ordersToday++;
+
+          // Tally up the items sold in this transaction
+          if (tx['items'] != null) {
+            for (var item in tx['items']) {
+              String name = item['name'] ?? 'Unknown';
+              int qty = (item['quantity'] ?? 0) as int;
+              productSales[name] = (productSales[name] ?? 0) + qty;
+            }
+          }
+        }
+      }
+    }
+
+    String topItem = 'None yet';
+    int topQty = 0;
+    productSales.forEach((key, value) {
+      if (value > topQty) {
+        topQty = value;
+        topItem = key;
+      }
+    });
+
+    return [
+      {
+        'label': 'Daily Revenue',
+        'value': '₱${dailyRevenue.toStringAsFixed(2)}',
+        'change': 'Live',
+        'up': true,
+        'icon': Icons.attach_money,
+        'color': AppColors.success
+      },
+      {
+        'label': 'Orders Today',
+        'value': ordersToday.toString(),
+        'change': 'Live',
+        'up': true,
+        'icon': Icons.receipt_long,
+        'color': AppColors.info
+      },
+      {
+        'label': 'Avg Order Value',
+        'value': ordersToday > 0
+            ? '₱${(dailyRevenue / ordersToday).toStringAsFixed(2)}'
+            : '₱0.00',
+        'change': '-',
+        'up': true,
+        'icon': Icons.analytics_outlined,
+        'color': AppColors.accent
+      },
+      {
+        'label': 'Top Seller Today',
+        'value': topItem,
+        'change': '$topQty units sold',
+        'up': true,
+        'icon': Icons.star_border_rounded,
+        'color': AppColors.warning
+      }
+    ];
+  }
+
+  // Helper function to map transactions into 7-day revenue aggregates
+  List<Map<String, dynamic>> _generateSalesData(
+      List<Map<String, dynamic>> transactions) {
+    final now = DateTime.now();
+    List<Map<String, dynamic>> salesData = [];
+
+    for (int i = 6; i >= 0; i--) {
+      DateTime targetDate = now.subtract(Duration(days: i));
+      double dailyTotal = 0;
+
+      for (var tx in transactions) {
+        if (tx['timestamp'] != null) {
+          DateTime txDate = (tx['timestamp'] as Timestamp).toDate();
+          if (txDate.year == targetDate.year &&
+              txDate.month == targetDate.month &&
+              txDate.day == targetDate.day) {
+            dailyTotal += (tx['totalAmount'] as num).toDouble();
+          }
+        }
+      }
+
+      // Format as "Mon", "Tue", etc.
+      String dayLabel = _getWeekdayLabel(targetDate.weekday);
+      salesData.add({'day': dayLabel, 'value': dailyTotal, 'isToday': i == 0});
+    }
+    return salesData;
+  }
+
+  String _getWeekdayLabel(int weekday) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days[weekday - 1];
   }
 
   @override
@@ -158,189 +222,212 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // --- RESPONSIVE KPI GRID ---
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 250,
-                          childAspectRatio: 1.5,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: _kpis.length,
-                        itemBuilder: (context, index) {
-                          final kpi = _kpis[index];
-                          return _buildKpiCard(kpi);
-                        },
-                      ),
-                      const SizedBox(height: 20),
+                  // STREAM BUILDER ADDED TO WRAP DASHBOARD CONTENT
+                  child: StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: _firestore.streamTransactions(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
 
-                      // --- RESPONSIVE 7-DAY TREND ---
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('7-Day Sales Trend',
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium),
-                              const SizedBox(height: 4),
-                              Text('Daily revenue | $branchName Branch',
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.textSecondary)),
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                height: 140,
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: _salesData.map((data) {
-                                    const maxValue = 32000;
-                                    final height =
-                                        (data['value'] / maxValue * 100)
-                                            .toDouble();
-                                    final isToday = data['day'] == 'Thu';
+                        final transactions = snapshot.data ?? [];
+                        final liveKpis = _generateKPIs(transactions);
+                        final liveSalesData = _generateSalesData(transactions);
 
-                                    return Flexible(
-                                      child: Column(
+                        // Calculate the max value dynamically for the chart height
+                        double maxDailyValue = 1000; // Minimum scale
+                        for (var data in liveSalesData) {
+                          if (data['value'] > maxDailyValue)
+                            maxDailyValue = data['value'];
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // --- LIVE RESPONSIVE KPI GRID ---
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 250,
+                                childAspectRatio: 1.5,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
+                              itemCount: liveKpis.length,
+                              itemBuilder: (context, index) {
+                                return _buildKpiCard(liveKpis[index]);
+                              },
+                            ),
+                            const SizedBox(height: 20),
+
+                            // --- LIVE RESPONSIVE 7-DAY TREND ---
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('7-Day Sales Trend',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium),
+                                    const SizedBox(height: 4),
+                                    Text('Daily revenue | $branchName Branch',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textSecondary)),
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                      height: 140,
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
                                         mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Text(
-                                              '${(data['value'] / 1000).toStringAsFixed(1)}K',
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: isToday
-                                                    ? AppColors.accent
-                                                    : AppColors.textSecondary,
-                                                fontWeight: isToday
-                                                    ? FontWeight.w700
-                                                    : FontWeight.w400,
-                                              ),
+                                            MainAxisAlignment.spaceEvenly,
+                                        children: liveSalesData.map((data) {
+                                          final height = (data['value'] /
+                                                  maxDailyValue *
+                                                  100)
+                                              .toDouble();
+                                          final isToday =
+                                              data['isToday'] as bool;
+
+                                          return Flexible(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  child: Text(
+                                                    '₱${(data['value'] / 1000).toStringAsFixed(1)}K',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: isToday
+                                                          ? AppColors.accent
+                                                          : AppColors
+                                                              .textSecondary,
+                                                      fontWeight: isToday
+                                                          ? FontWeight.w700
+                                                          : FontWeight.w400,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Flexible(
+                                                  child: Container(
+                                                    width: 24,
+                                                    height: height > 0
+                                                        ? height
+                                                        : 2, // Ensure bar is slightly visible even if 0
+                                                    decoration: BoxDecoration(
+                                                      color: isToday
+                                                          ? AppColors.accent
+                                                          : AppColors.primary
+                                                              .withOpacity(0.3),
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                              .vertical(
+                                                              top: Radius
+                                                                  .circular(4)),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  data['day'],
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: isToday
+                                                        ? AppColors.primary
+                                                        : AppColors
+                                                            .textSecondary,
+                                                    fontWeight: isToday
+                                                        ? FontWeight.w700
+                                                        : FontWeight.w400,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Flexible(
-                                            child: Container(
-                                              width: 24,
-                                              height: height,
-                                              decoration: BoxDecoration(
-                                                color: isToday
-                                                    ? AppColors.accent
-                                                    : AppColors.primary
-                                                        .withOpacity(0.3),
-                                                borderRadius:
-                                                    const BorderRadius.vertical(
-                                                        top:
-                                                            Radius.circular(4)),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            data['day'],
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: isToday
-                                                  ? AppColors.primary
-                                                  : AppColors.textSecondary,
-                                              fontWeight: isToday
-                                                  ? FontWeight.w700
-                                                  : FontWeight.w400,
-                                            ),
-                                          ),
-                                        ],
+                                          );
+                                        }).toList(),
                                       ),
-                                    );
-                                  }).toList(),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text('Live Low Stock Alerts',
-                          style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 8),
+                            ),
+                            const SizedBox(height: 16),
+                            Text('Live Low Stock Alerts',
+                                style: Theme.of(context).textTheme.titleMedium),
+                            const SizedBox(height: 8),
 
-                      // --- REAL-TIME RESPONSIVE ALERTS ---
-                      StreamBuilder<List<RawMaterial>>(
-                        stream: _firestore.streamInventory(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                                child: Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: CircularProgressIndicator(),
-                            ));
-                          }
-
-                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                            return const Card(
-                              child: Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Text('No inventory data available.'),
-                              ),
-                            );
-                          }
-
-                          // Filter items that are running low.
-                          // You can adjust the 15.0 threshold logic to match your business rules.
-                          final double threshold = 15.0;
-                          final lowStockItems = snapshot.data!
-                              .where((item) => item.currentStock <= threshold)
-                              .toList();
-
-                          if (lowStockItems.isEmpty) {
-                            return Card(
-                              color: AppColors.success.withOpacity(0.1),
-                              elevation: 0,
-                              child: const ListTile(
-                                leading: Icon(Icons.check_circle,
-                                    color: AppColors.success),
-                                title: Text('All inventory levels are healthy.',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600)),
-                              ),
-                            );
-                          }
-
-                          return Column(
-                            children: lowStockItems.map((item) {
-                              // If stock is below 30% of the threshold, mark it as critical
-                              final severity =
-                                  item.currentStock <= (threshold * 0.3)
-                                      ? 'critical'
-                                      : 'low';
-                              return _buildAlertCard({
-                                'ingredient': item.name,
-                                'available':
-                                    item.currentStock.toStringAsFixed(1) +
-                                        ' ' +
-                                        item.unit,
-                                'threshold': threshold.toStringAsFixed(1) +
-                                    ' ' +
-                                    item.unit,
-                                'severity': severity,
-                              });
-                            }).toList(),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                            // --- REAL-TIME RESPONSIVE ALERTS (Already Correct) ---
+                            StreamBuilder<List<RawMaterial>>(
+                              stream: _firestore.streamInventory(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                      child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: CircularProgressIndicator(),
+                                  ));
+                                }
+                                if (!snapshot.hasData ||
+                                    snapshot.data!.isEmpty) {
+                                  return const Card(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(16.0),
+                                      child:
+                                          Text('No inventory data available.'),
+                                    ),
+                                  );
+                                }
+                                final double threshold = 15.0;
+                                final lowStockItems = snapshot.data!
+                                    .where((item) =>
+                                        item.currentStock <= threshold)
+                                    .toList();
+                                if (lowStockItems.isEmpty) {
+                                  return Card(
+                                    color: AppColors.success.withOpacity(0.1),
+                                    elevation: 0,
+                                    child: const ListTile(
+                                      leading: Icon(Icons.check_circle,
+                                          color: AppColors.success),
+                                      title: Text(
+                                          'All inventory levels are healthy.',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w600)),
+                                    ),
+                                  );
+                                }
+                                return Column(
+                                  children: lowStockItems.map((item) {
+                                    final severity =
+                                        item.currentStock <= (threshold * 0.3)
+                                            ? 'critical'
+                                            : 'low';
+                                    return _buildAlertCard({
+                                      'ingredient': item.name,
+                                      'available':
+                                          '${item.currentStock.toStringAsFixed(1)} ${item.unit}',
+                                      'threshold':
+                                          '${threshold.toStringAsFixed(1)} ${item.unit}',
+                                      'severity': severity,
+                                    });
+                                  }).toList(),
+                                );
+                              },
+                            ),
+                          ],
+                        );
+                      }),
                 ),
               ),
             ],
@@ -480,8 +567,7 @@ class _BranchManagerScreenState extends State<BranchManagerScreen> {
         leading: Icon(Icons.warning_amber_rounded, color: color, size: 28),
         title: Text(alert['ingredient'],
             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-        subtitle: Text(
-            '${alert['available']} available / ${alert['threshold']} min',
+        subtitle: Text('${alert['available']} / ${alert['threshold']} min',
             style: const TextStyle(fontSize: 11)),
       ),
     );
