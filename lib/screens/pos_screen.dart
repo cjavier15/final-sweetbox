@@ -127,13 +127,13 @@ class _PosScreenState extends State<PosScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pushNamedAndRemoveUntil(
+              context, '/login', (route) => false),
+        ),
         title: const Text('POS Terminal'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                context, '/login', (route) => false),
-          ),
           Center(
             child: Container(
               margin: const EdgeInsets.only(right: 12),
@@ -233,9 +233,9 @@ class _PosScreenState extends State<PosScreen> {
   Widget _buildProductGrid(List<Product> products, double screenWidth) {
     // Determine cross-axis count based on actual width
     int crossAxisCount = 2;
-    if (screenWidth > 1200)
+    if (screenWidth > 1200) {
       crossAxisCount = 4;
-    else if (screenWidth > 600) crossAxisCount = 3;
+    } else if (screenWidth > 600) crossAxisCount = 3;
 
     return GridView.builder(
       padding: const EdgeInsets.all(12),
@@ -320,7 +320,7 @@ class _PosScreenState extends State<PosScreen> {
                     const Text('Process as Refund',
                         style: TextStyle(color: AppColors.danger)),
                     Switch(
-                      activeColor: AppColors.danger,
+                      activeThumbColor: AppColors.danger,
                       value: _isRefund,
                       onChanged: (v) => setState(() => _isRefund = v),
                     ),
