@@ -85,8 +85,8 @@ class _PosScreenState extends State<PosScreen> {
       );
 
       if (!mounted) return;
+      Navigator.pop(context); // Close loading indicator
 
-      Navigator.pop(context);
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -117,11 +117,35 @@ class _PosScreenState extends State<PosScreen> {
         ),
       );
     } catch (e) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Transaction Failed: $e'),
-          backgroundColor: AppColors.danger,
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading indicator
+
+      // --- CHANGED: Now displays an Error Dialog instead of a SnackBar ---
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.danger),
+              SizedBox(width: 12),
+              Text('Transaction Failed',
+                  style: TextStyle(color: AppColors.danger)),
+            ],
+          ),
+          // Removes the word "Exception: " to make the error look cleaner to the user
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            )
+          ],
         ),
       );
     }

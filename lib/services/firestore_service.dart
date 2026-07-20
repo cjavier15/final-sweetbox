@@ -67,6 +67,7 @@ class FirestoreService {
     bool isRefund = false,
   }) async {
     final Map<String, int> productQuantities = {};
+
     for (var item in cart) {
       productQuantities[item['name']] =
           (productQuantities[item['name']] ?? 0) + (item['quantity'] as int);
@@ -75,6 +76,7 @@ class FirestoreService {
     return _db.runTransaction((transaction) async {
       final productSnapshots = await _db.collection('products').get();
       final inventorySnapshots = await _db.collection('inventory').get();
+
       final List<Map<String, dynamic>> transactionItemsJson = [];
 
       for (var itemEntry in productQuantities.entries) {
@@ -103,6 +105,15 @@ class FirestoreService {
               inventorySnapshots.docs.firstWhere((i) => i.id == rawMaterialId);
           final double currentStock =
               (invDoc.get('currentStock') as num).toDouble();
+
+          // --- ADDED: INVENTORY SAFEGUARD LOGIC ---
+          // Check if this is a standard sale (not a refund) and if the deduction drops stock below zero.
+          if (!isRefund && (currentStock - aggregateDeduction < 0)) {
+            final ingredientName = invDoc.get('name');
+            throw Exception(
+                'Insufficient stock for $ingredientName. Need $aggregateDeduction but only have $currentStock left.');
+          }
+          // ----------------------------------------
 
           transaction.update(invDoc.reference, {
             'currentStock': currentStock - aggregateDeduction,
