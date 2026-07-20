@@ -140,9 +140,10 @@ class FirestoreService {
 
   Future<void> addUser(String email, String password, String role) async {
     await _db.collection('users').add({
-      'email': email,
+      'email': email.trim(),
       'password': password,
       'role': role,
+      'Role': role,
       'createdAt': FieldValue.serverTimestamp(),
       'active': true,
     });
@@ -162,7 +163,15 @@ class FirestoreService {
     }
 
     final doc = snapshot.docs.first;
-    return {'id': doc.id, ...doc.data()};
+    final data = doc.data();
+    final normalizedRole = data['Role'] ?? data['role'];
+
+    return {
+      'id': doc.id,
+      ...data,
+      'role': normalizedRole?.toString() ?? '',
+      'Role': normalizedRole?.toString() ?? '',
+    };
   }
 
   Future<void> deleteUser(String id) async {
