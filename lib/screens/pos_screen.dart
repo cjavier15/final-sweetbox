@@ -17,7 +17,6 @@ class _PosScreenState extends State<PosScreen> {
   final TransactionService _transactionService = TransactionService();
   late Stream<List<Product>> _productsStream;
 
-  // (Keep all your existing variable declarations and logic intact)
   final List<Map<String, dynamic>> _cart = [];
   String _selectedPayment = 'Cash';
   bool _pwdDiscount = false;
@@ -69,9 +68,63 @@ class _PosScreenState extends State<PosScreen> {
     });
   }
 
-  // (Keep _processTransaction identical to your existing file)
   Future<void> _processTransaction() async {
-    // ... [Paste your existing _processTransaction logic here] ...
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      await _transactionService.processCheckout(
+        cartItems: _cart,
+        totalAmount: _total,
+        paymentMethod: _selectedPayment,
+        appliedDiscount: _pwdDiscount,
+        isRefund: _isRefund,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle, color: AppColors.success),
+              SizedBox(width: 12),
+              Text('Transaction Confirmed'),
+            ],
+          ),
+          content: const Text(
+              'BOM components successfully deducted from central inventory store.'),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  _cart.clear();
+                  _pwdDiscount = false;
+                  _isRefund = false;
+                });
+              },
+              child: const Text('Next Order'),
+            )
+          ],
+        ),
+      );
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Transaction Failed: $e'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 
   @override
@@ -82,16 +135,86 @@ class _PosScreenState extends State<PosScreen> {
       appBar: AppBar(
         title: const Text('POS Terminal'),
         actions: [
-          // (Keep your existing alert notification icon button)
+          // REAL-TIME INVENTORY ALERT BELL
+          IconButton(
+            icon: const Icon(Icons.notifications_active,
+                color: Colors.orangeAccent),
+            tooltip: 'Check Stock Alerts',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Real-Time Stock Levels'),
+                  content: SizedBox(
+                    width: 400,
+                    height: 500,
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('inventory')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return const Text('Something went wrong');
+                        }
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                        final inventoryItems = snapshot.data!.docs;
+                        return ListView.builder(
+                          itemCount: inventoryItems.length,
+                          itemBuilder: (context, index) {
+                            var item = inventoryItems[index].data()
+                                as Map<String, dynamic>;
+                            int reorderLevel = item['reorder_level'] ?? 10;
+                            int currentStock = item['stock'] ?? 0;
+                            bool isLowStock = currentStock <= reorderLevel;
+                            return ListTile(
+                              title: Text(item['name'] ?? 'Unknown'),
+                              subtitle: Text('Stock: $currentStock'),
+                              trailing: isLowStock
+                                  ? const Icon(Icons.warning, color: Colors.red)
+                                  : const Icon(Icons.check_circle,
+                                      color: Colors.green),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    )
+                  ],
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             onPressed: () => Navigator.pushNamedAndRemoveUntil(
                 context, '/login', (route) => false),
           ),
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(20)),
+              child: const Text('Ibaan Branch',
+                  style: TextStyle(fontSize: 12, color: Colors.white)),
+            ),
+          )
         ],
       ),
       endDrawer: isMobile
-          ? Drawer(child: SafeArea(child: _buildCartPanel(double.infinity)))
+          ? Drawer(
+              child: SafeArea(child: _buildCartPanel(double.infinity)),
+            )
           : null,
       floatingActionButton: isMobile
           ? Builder(
@@ -108,12 +231,17 @@ class _PosScreenState extends State<PosScreen> {
       body: StreamBuilder<List<Product>>(
         stream: _productsStream,
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (snapshot.hasError) {
+            return Center(
+                child: Text('Error loading products: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
-
+          }
+          final dynamicProducts = snapshot.data!;
           final filteredProducts = _selectedCategory == 'All'
-              ? snapshot.data!
-              : snapshot.data!
+              ? dynamicProducts
+              : dynamicProducts
                   .where((p) => p.category == _selectedCategory)
                   .toList();
 
@@ -128,8 +256,7 @@ class _PosScreenState extends State<PosScreen> {
                   ],
                 ),
               ),
-              if (!isMobile)
-                _buildCartPanel(380), // Slightly wider cart panel for desktop
+              if (!isMobile) _buildCartPanel(380),
             ],
           );
         },
@@ -149,7 +276,7 @@ class _PosScreenState extends State<PosScreen> {
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
                     label: Text(cat,
-                        style: TextStyle(fontWeight: FontWeight.w600)),
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
                     selected: _selectedCategory == cat,
                     onSelected: (_) => setState(() => _selectedCategory = cat),
                     selectedColor: AppColors.accent.withOpacity(0.9),
@@ -170,7 +297,6 @@ class _PosScreenState extends State<PosScreen> {
   Widget _buildProductGrid(List<Product> products) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
-      // Automatically sizes columns to prevent awkward squishing
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 220,
         childAspectRatio: 1.1,
@@ -208,7 +334,7 @@ class _PosScreenState extends State<PosScreen> {
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 14),
                     textAlign: TextAlign.center,
-                    maxLines: 2, // Added to prevent text overflow
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
@@ -275,7 +401,6 @@ class _PosScreenState extends State<PosScreen> {
                     },
                   ),
           ),
-          // Cleaned up the bottom checkout sheet
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
