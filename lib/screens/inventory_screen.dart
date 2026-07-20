@@ -530,7 +530,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 ListTile(
                   leading:
                       const Icon(Icons.account_tree, color: AppColors.primary),
-                  title: const Text('Add Product & BOM (Bill of Materials)'),
+                  title: const Text('Add Product'),
                   onTap: () {
                     Navigator.pop(context);
                     _openAddProductBOMDialog();

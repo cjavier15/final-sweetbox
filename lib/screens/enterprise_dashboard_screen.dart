@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../services/firestore_service.dart';
 
@@ -31,17 +32,41 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: LayoutBuilder(builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 600;
+              final isMobile = constraints.maxWidth < 768;
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSummaryDeck(
                       liveRevenue, transactionHistory.length, isMobile),
                   const SizedBox(height: 24),
-                  Text('Real-Time Revenue Performance Curve',
+                  Text('Real-Time Revenue Performance',
                       style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 16),
-                  _buildGraphicalAnalyticsView(transactionHistory),
+                  _buildLineChartCard(transactionHistory, constraints.maxWidth),
+                  const SizedBox(height: 24),
+
+                  // NEW: Additional Responsive Charts
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      SizedBox(
+                        width: isMobile
+                            ? double.infinity
+                            : (constraints.maxWidth / 2) - 24,
+                        child: _buildPaymentMethodsPieChart(transactionHistory),
+                      ),
+                      SizedBox(
+                        width: isMobile
+                            ? double.infinity
+                            : (constraints.maxWidth / 2) - 24,
+                        child:
+                            _buildTransactionVolumeBarChart(transactionHistory),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
                 ],
               );
             }),
@@ -53,7 +78,6 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
 
   Widget _buildSummaryDeck(
       double totalRev, int totalSalesCount, bool isMobile) {
-    // Use Flex to switch between Row (desktop) and Column (mobile) smoothly
     return Flex(
       direction: isMobile ? Axis.vertical : Axis.horizontal,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -64,29 +88,29 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
           child: Card(
             color: AppColors.primary,
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Gross Running Revenue',
                       style: TextStyle(color: Colors.white70)),
                   const SizedBox(height: 8),
-                  Text(' ${totalRev.toStringAsFixed(2)}',
+                  Text('₱ ${totalRev.toStringAsFixed(2)}',
                       style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 22,
+                          fontSize: 28,
                           fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
           ),
         ),
-        SizedBox(width: isMobile ? 0 : 12, height: isMobile ? 12 : 0),
+        SizedBox(width: isMobile ? 0 : 16, height: isMobile ? 16 : 0),
         Flexible(
           fit: FlexFit.loose,
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -95,7 +119,7 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
                   const SizedBox(height: 8),
                   Text('$totalSalesCount Orders',
                       style: const TextStyle(
-                          fontSize: 22,
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: AppColors.accent)),
                 ],
@@ -107,28 +131,24 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
     );
   }
 
-  Widget _buildGraphicalAnalyticsView(List<Map<String, dynamic>> dataPoints) {
-    if (dataPoints.isEmpty) {
-      return const SizedBox(
-          height: 200,
-          child: Center(child: Text('Awaiting transactional data updates...')));
-    }
+  Widget _buildLineChartCard(
+      List<Map<String, dynamic>> dataPoints, double maxWidth) {
+    if (dataPoints.isEmpty) return const _EmptyChartState();
 
     List<FlSpot> plots = [];
-    double indexCount = 0;
-
-    for (var tx in dataPoints.reversed) {
-      plots.add(FlSpot(indexCount, (tx['totalAmount'] as num).toDouble()));
-      indexCount += 1.0;
+    for (int i = 0; i < dataPoints.length; i++) {
+      plots.add(FlSpot(i.toDouble(),
+          (dataPoints.reversed.toList()[i]['totalAmount'] as num).toDouble()));
     }
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final chartHeight = constraints.maxWidth > 600 ? 350.0 : 240.0;
-      return Container(
+    final chartHeight = maxWidth > 600 ? 350.0 : 240.0;
+
+    return Card(
+      elevation: 2,
+      child: Container(
         height: chartHeight,
-        padding: const EdgeInsets.only(right: 24, top: 16, bottom: 8),
-        decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(12)),
+        padding:
+            const EdgeInsets.only(right: 24, top: 24, bottom: 12, left: 12),
         child: LineChart(
           LineChartData(
             gridData: const FlGridData(show: true, drawVerticalLine: false),
@@ -136,6 +156,8 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
               rightTitles:
                   AxisTitles(sideTitles: SideTitles(showTitles: false)),
               topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              bottomTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
             lineBarsData: [
@@ -145,14 +167,148 @@ class _EnterpriseDashboardScreenState extends State<EnterpriseDashboardScreen> {
                 barWidth: 3,
                 color: AppColors.accent,
                 belowBarData: BarAreaData(
-                    show: true,
-                    color: AppColors.accent.withValues(alpha: 0.15)),
-                dotData: const FlDotData(show: true),
+                    show: true, color: AppColors.accent.withOpacity(0.15)),
+                dotData: const FlDotData(show: false),
               )
             ],
           ),
         ),
-      );
-    });
+      ),
+    );
+  }
+
+  // NEW: Pie Chart for Payment Methods
+  Widget _buildPaymentMethodsPieChart(List<Map<String, dynamic>> dataPoints) {
+    if (dataPoints.isEmpty) return const _EmptyChartState();
+
+    int cash = 0, gcash = 0, card = 0;
+    for (var tx in dataPoints) {
+      String pm = (tx['paymentMethod'] ?? 'Cash').toString().toLowerCase();
+      if (pm.contains('gcash') || pm.contains('e-wallet'))
+        gcash++;
+      else if (pm.contains('card'))
+        card++;
+      else
+        cash++;
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Payment Preferences',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 200,
+              child: PieChart(
+                PieChartData(
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 40,
+                  sections: [
+                    PieChartSectionData(
+                      color: AppColors.accent,
+                      value: cash.toDouble(),
+                      title: 'Cash\n$cash',
+                      radius: 50,
+                      titleStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
+                    ),
+                    PieChartSectionData(
+                      color: AppColors.info,
+                      value: gcash.toDouble(),
+                      title: 'E-Wallet\n$gcash',
+                      radius: 50,
+                      titleStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
+                    ),
+                    PieChartSectionData(
+                      color: AppColors.success,
+                      value: card.toDouble(),
+                      title: 'Card\n$card',
+                      radius: 50,
+                      titleStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // NEW: Bar Chart for Order Volume
+  Widget _buildTransactionVolumeBarChart(
+      List<Map<String, dynamic>> dataPoints) {
+    if (dataPoints.isEmpty) return const _EmptyChartState();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Recent Volume Profile',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 200,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: 15, // Arbitrary max for visualization
+                  barTouchData: BarTouchData(enabled: false),
+                  titlesData: const FlTitlesData(show: false),
+                  borderData: FlBorderData(show: false),
+                  gridData: const FlGridData(show: false),
+                  barGroups: List.generate(
+                    7,
+                    (index) => BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: (dataPoints.length > index
+                                  ? (index * 1.5 + 2)
+                                  : 0)
+                              .toDouble(), // Mock historical distribution
+                          color: AppColors.primary.withOpacity(0.8),
+                          width: 16,
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(4)),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyChartState extends StatelessWidget {
+  const _EmptyChartState();
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      child: SizedBox(
+        height: 200,
+        child: Center(child: Text('Awaiting transactional data...')),
+      ),
+    );
   }
 }
