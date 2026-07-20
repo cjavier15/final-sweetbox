@@ -1,13 +1,10 @@
 # Sweet Box — Mobile Companion App
-### Centralized Analytics System with AI-Driven Prescriptive Inventory Management and Decision Support
-
-A Flutter mobile application companion for the Sweet Box multi-branch analytics system, developed as part of the BS Information Technology — Business Analytics capstone project at Batangas State University.
-
+### Centralized Analytics System with Inventory Management and Decision Support for Operations of Sweet Box
 ---
 
 ## Project Overview
 
-This Flutter app provides a mobile interface for the Sweet Box centralized analytics system, covering five role-specific screens:
+This Flutter app provides a mobile interface for the Sweet Box centralized analytics system, covering five screens:
 
 | Screen | Role | Description |
 |---|---|---|
@@ -22,77 +19,9 @@ This Flutter app provides a mobile interface for the Sweet Box centralized analy
 
 Before running the app, make sure you have the following installed on your machine:
 
-### 1. Flutter SDK
-
-Download from: https://docs.flutter.dev/get-started/install
-
-**Windows:**
-- Download the Flutter SDK zip from the link above
-- Extract to `C:\flutter`
-- Add `C:\flutter\bin` to your system PATH environment variable
-- Open a new terminal and run: `flutter doctor`
-
-**macOS:**
-- Download the Flutter SDK zip
-- Extract to your home directory: `~/flutter`
-- Add to PATH in your `~/.zshrc` or `~/.bash_profile`:
-  ```
-  export PATH="$HOME/flutter/bin:$PATH"
-  ```
-- Run: `flutter doctor`
-
-**Linux:**
-- Download the Flutter SDK tar
-- Extract to `~/flutter`
-- Add to PATH in `~/.bashrc`:
-  ```
-  export PATH="$HOME/flutter/bin:$PATH"
-  ```
-- Run: `flutter doctor`
-
----
-
-### 2. Android Studio (Recommended) or VS Code
-
-**Android Studio:**
-- Download from: https://developer.android.com/studio
-- During installation, make sure to install:
-  - Android SDK
-  - Android SDK Platform-Tools
-  - Android Virtual Device (AVD)
-- After installation, open Android Studio and go to:
-  `SDK Manager > SDK Tools > Android SDK Build-Tools` — make sure it is installed
-
-**VS Code (Alternative):**
-- Download from: https://code.visualstudio.com
-- Install the Flutter extension from the Extensions marketplace
-- Install the Dart extension as well
-
----
-
-### 3. Android Emulator or Physical Device
-
-**Android Emulator (via Android Studio):**
-1. Open Android Studio
-2. Go to `Tools > Device Manager`
-3. Click `Create Device`
-4. Select a device — recommend Pixel 6 or Pixel 7
-5. Select a system image — recommend API 33 (Android 13) or API 34 (Android 14)
-6. Click Finish and then the Play button to start the emulator
-
-**Physical Android Device:**
-1. On your Android phone, go to `Settings > About Phone`
-2. Tap `Build Number` 7 times to enable Developer Options
-3. Go to `Settings > Developer Options`
-4. Enable `USB Debugging`
-5. Connect your phone to your computer via USB
-6. Accept the debugging prompt on your phone
-
-**iOS (macOS only):**
-- Requires Xcode installed from the Mac App Store
-- Run `open -a Simulator` to launch the iOS Simulator
-
----
+Flutter SDK — install per platform: https://docs.flutter.dev/get-started/install
+An editor —  VS Code (with the Flutter and Dart extensions).
+An emulator or device — an Android Virtual Device or a physical device with USB debugging enabled.
 
 ## Installation and Setup
 
