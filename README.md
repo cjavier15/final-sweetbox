@@ -9,14 +9,12 @@ A Flutter mobile application for the Sweet Box branch analytics system and inven
 Login routes to a role-specific screen after OTP verification:
 
 | Role | Landing Screen |
-|---|---|---|
+| --- | --- |
 | Business Owner | Enterprise Analytics Module |
 | System Administrator | User Management (create/delete accounts) |
 | Branch Manager | Branch Manager Dashboard |
 | Front Staff / Cashier | POS Terminal |
 | Inventory Staff | Inventory & Supply Chain |
-|---|---|---|
----
 
 ## Features
 
