@@ -4,7 +4,7 @@ A Flutter mobile application for the Sweet Box branch analytics system and inven
 
 ---
 
-## User Roles & Screens
+## Target Users and Screens
 
 Login routes to a role-specific screen after OTP verification:
 
