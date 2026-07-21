@@ -15,7 +15,7 @@ Login routes to a role-specific screen after OTP verification:
 | Branch Manager | Branch Manager Dashboard |
 | Front Staff / Cashier | POS Terminal |
 | Inventory Staff | Inventory & Supply Chain |
-
+|---|---|---|
 ---
 
 ## Features
