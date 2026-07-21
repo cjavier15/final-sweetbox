@@ -127,11 +127,18 @@ flutter pub get
 ### 3. Create assets folder
 
 ```
-mkdir -p assets/images        # macOS/Linux
-mkdir assets\images           # Windows
+mkdir assets\images    
 ```
 
-### 4. Run the app
+### 4. Link towards Firebase Firestore Database and seed database
+```
+dart pub global activate flutterfire_cli
+flutterfire configure
+```
+
+In the ```login_screen.dart file```  starting in line 217 is a commented function for seeding the database, you may uncomment this to set and press the button for seeding the database unto the app where it will utilize the ```database_seeder.dart``` file inside the services folder. Press the button in the login page and after seeding you may re-comment the the function again for cleaner UI.
+
+### 5. Run the app
 
 ```bash
 flutter devices          # list emulators/devices
