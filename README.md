@@ -98,10 +98,10 @@ final-sweetbox-main/
 │       ├── branch_manager_screen.dart  
 │       ├── enterprise_dashboard_screen.dart 
 │       └── user_management_screen.dart  
-├── android/                             # Already wired to Firebase (google-services.json committed)
-├── ios/ macos/ windows/ linux/ web/      # Standard Flutter platform scaffolding
+├── android/                             # Already wired to Firebase
+├── ios/ macos/ windows/ linux/ web/     
 ├── assets/
-│   └── logo.png                         # App icon / splash source image
+│   └── logo.png                         
 ├── firebase.json                        # FlutterFire project mapping (sweetbox-final)
 └── pubspec.yaml
 ```
@@ -141,8 +141,8 @@ In the ```login_screen.dart file```  starting in line 217 is a commented functio
 ### 5. Run the app
 
 ```bash
-flutter devices          # list emulators/devices
-flutter run -d <device-id>  # target a specific one
+flutter devices          
+flutter run -d <device-id>  
 ```
 
 ---
@@ -166,8 +166,8 @@ Defined in `lib/theme/app_theme.dart`:
 
 ## Known Limitations
 
-- **OTP is simulated.** Any 6-digit numeric input passes; no code is actually generated or emailed.
-- **Passwords are stored and compared in plaintext** in the `users` collection (`FirestoreService.authenticateUser`).
+- **OTP is simulated.** Any 6-digit numeric input passes; no code is actually generated or emailed. You may input any 6 digit numbers to enter.
+- **Passwords are stored and compared in plaintext** in the `users` collection
 - **No Firestore security rules are included** in this repository.
 - **No branch segmentation yet.** Products, inventory, and transactions aren't tagged with a branch ID, so the Enterprise Analytics Module currently reports on all transactions combined rather than per-branch
 
