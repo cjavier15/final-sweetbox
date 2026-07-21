@@ -112,8 +112,8 @@ final-sweetbox-main/
 
 ### 1. Prerequisites
 
-- **Flutter SDK** — install per platform: https://docs.flutter.dev/get-started/install
-- **An IDE** — VS Code (with the Flutter and Dart extensions).
+- **Flutter SDK**
+- **An IDE** — VS Code recommended (with the Flutter and Dart extensions).
 - **An emulator or device** — an Android Virtual Device or a physical device with USB debugging enabled.
 
 
