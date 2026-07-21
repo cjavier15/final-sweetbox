@@ -1,4 +1,4 @@
-#### Centralized Analytics System with Inventory Management and Decision Support for Operations of Sweet Box
+# Centralized Analytics System with Inventory Management and Decision Support for Operations of Sweet Box
 
 A Flutter mobile application for the Sweet Box branch analytics system and inventory management modules.
 
